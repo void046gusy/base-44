@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>O Último Reino</title>
+  </head>
+  <body>
+    <div id="scene"></div>
+
+    <div id="hud">
+      <header class="panel title-card">
+        <h1>O Último Reino</h1>
+        <p>Os monstros surgiram do nada e consumiram o mundo. Resta este reino — e você.</p>
+      </header>
+
+      <div class="panel badge" id="location">Reino de Vaelsgard</div>
+
+      <div class="panel minimap-card">
+        <canvas id="minimap" width="176" height="176"></canvas>
+        <div class="legend">
+          <span><i class="dot stone"></i>Reino</span>
+          <span><i class="dot red"></i>Brechas</span>
+        </div>
+      </div>
+
+      <div class="panel controls">
+        <span class="desktop-hint"><b>WASD</b> mover · <b>Mouse</b> câmera · <b>Shift</b> correr · <b>Roda</b> zoom</span>
+        <span class="touch-hint">Joystick à esquerda · arraste à direita para olhar</span>
+      </div>
+
+      <div id="click-prompt">Clique para assumir o controle</div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
