@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { M, box, cylinder, cone, plane, signTexture, stripeTexture } from './materials.js';
+import { M, box, cylinder, cone, plane, signTexture, stripeTexture, brickMaterial } from './materials.js';
 import { addCollider, addBlocker } from './colliders.js';
 import { createSmoke } from './fx.js';
 
@@ -53,7 +53,7 @@ function building({
   group.position.set(x, 0, z);
   group.rotation.y = rotY;
 
-  box(w + 0.7, 1.1, d + 0.7, M.stoneDark, 0, 0.55, 0, { parent: group });
+  box(w + 0.7, 1.1, d + 0.7, brickMaterial(w / 3.2, 1), 0, 0.55, 0, { parent: group });
   const body = box(w, h, d, wall, 0, h / 2 + 0.5, 0, { parent: group });
 
   // madeiramento aparente
@@ -64,6 +64,15 @@ function building({
   }
   box(w, 0.3, 0.3, M.woodDark, 0, h + 0.35, d / 2 + 0.03, { parent: group });
   box(w, 0.26, 0.26, M.woodDark, 0, h * 0.62, d / 2 + 0.03, { parent: group });
+  box(w, 0.3, 0.3, M.woodDark, 0, h + 0.35, -d / 2 - 0.03, { parent: group });
+  box(w, 0.26, 0.26, M.woodDark, 0, h * 0.62, -d / 2 - 0.03, { parent: group });
+
+  // caibros laterais e janelas das paredes do lado
+  for (const sx of [-1, 1]) {
+    box(0.3, 0.3, d, M.woodDark, sx * (w / 2 + 0.03), h + 0.35, 0, { parent: group });
+    box(0.26, 0.26, d, M.woodDark, sx * (w / 2 + 0.03), h * 0.62, 0, { parent: group });
+    box(0.2, 1.35, 1.05, M.window, sx * (w / 2 + 0.04), 4.5, 0, { parent: group });
+  }
 
   // telhado
   const roofMesh = new THREE.Mesh(new THREE.ConeGeometry(1, roofH, 4), roof);

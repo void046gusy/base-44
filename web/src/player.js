@@ -69,8 +69,8 @@ export function createPlayer({ scene, camera, canvas }) {
   legRight.add(legRightMesh);
   part(0.26, 0.16, 0.36, leather, 0, -0.85, 0.06, legRight);
 
-  const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.92, 1.2), capeMaterial);
-  cape.position.set(0, 1.24, -0.26);
+  const cape = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 1.05), capeMaterial);
+  cape.position.set(0, 1.16, -0.25);
   cape.rotation.x = 0.08;
   model.add(cape);
 
@@ -102,8 +102,8 @@ export function createPlayer({ scene, camera, canvas }) {
   });
 
   let yaw = 0;
-  let pitch = 0.38;
-  let distance = 8.8;
+  let pitch = 0.36;
+  let distance = 9.6;
   let dragging = false;
 
   const prompt = document.getElementById('click-prompt');
@@ -111,7 +111,11 @@ export function createPlayer({ scene, camera, canvas }) {
   canvas.addEventListener('pointerdown', (event) => {
     if (event.pointerType !== 'mouse') return;
     dragging = true;
-    if (document.pointerLockElement !== canvas) canvas.requestPointerLock?.();
+    if (prompt) prompt.classList.add('hidden');
+    if (document.pointerLockElement !== canvas) {
+      const request = canvas.requestPointerLock?.();
+      if (request && typeof request.catch === 'function') request.catch(() => {});
+    }
   });
   window.addEventListener('pointerup', () => {
     dragging = false;

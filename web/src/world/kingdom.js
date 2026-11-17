@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { M, box, cylinder, cone, plane, sigilTexture } from './materials.js';
+import { M, box, cylinder, cone, plane, sigilTexture, brickMaterial } from './materials.js';
 import { addCollider, addBlocker } from './colliders.js';
 import { KINGDOM, GATE } from './layout.js';
 
@@ -31,7 +31,7 @@ function wallSegment(parent, { x, z, length, axis = 'x' }) {
   if (axis === 'z') group.rotation.y = Math.PI / 2;
   parent.add(group);
 
-  const body = box(length, WALL_HEIGHT, WALL_THICKNESS, M.stone, 0, WALL_HEIGHT / 2, 0, { parent: group });
+  const body = box(length, WALL_HEIGHT, WALL_THICKNESS, brickMaterial(length / 6, 2.4), 0, WALL_HEIGHT / 2, 0, { parent: group });
   box(length, 0.5, WALL_THICKNESS + 1.1, M.stoneLight, 0, WALL_HEIGHT + 0.2, 0, { parent: group });
 
   const crenellations = new THREE.Mesh(
@@ -56,7 +56,7 @@ function tower(parent, { x, z, radius = 6, height = 18, roofMaterial = M.roofSla
   group.position.set(x, 0, z);
   parent.add(group);
 
-  const body = cylinder(radius, radius * 1.07, height, 12, M.stone, 0, height / 2, 0, { parent: group });
+  const body = cylinder(radius, radius * 1.07, height, 12, brickMaterial(radius * 0.9, height / 4), 0, height / 2, 0, { parent: group });
   cylinder(radius * 1.14, radius * 1.14, 0.7, 12, M.stoneLight, 0, height + 0.35, 0, { parent: group });
 
   for (let i = 0; i < 12; i++) {
@@ -134,12 +134,14 @@ function buildGatehouse(parent, bannerMaterial) {
   for (const side of [-1, 1]) {
     const hinge = new THREE.Group();
     hinge.position.set(side * (GATE.width / 2), 0, GATE.z + 0.6);
-    hinge.rotation.y = side * 1.15;
+    hinge.rotation.y = side * 1.45;
     group.add(hinge);
-    box(GATE.width / 2, 8.6, 0.45, M.woodDark, (-side * GATE.width) / 4, 4.5, 0, { parent: hinge });
+    box(GATE.width / 2 - 0.2, 8.2, 0.34, M.wood, (-side * GATE.width) / 4, 4.4, 0, { parent: hinge });
     for (let i = 0; i < 3; i++) {
       box(GATE.width / 2, 0.22, 0.55, M.ironDark, (-side * GATE.width) / 4, 2 + i * 2.4, 0, { parent: hinge });
     }
+    // porta aberta: colisor rente à folha de madeira
+    addCollider(side * 6.6, GATE.z - 3.2, 0.7, 3.6);
   }
 
   // tochas do portão
@@ -171,7 +173,7 @@ function buildCastle(parent, bannerMaterial) {
   box(13.6, 0.4, 2.2, M.stoneLight, 0, 1.9, 18, { parent: group });
 
   // torreão principal
-  const keep = box(28, 20, 17, M.stone, 0, 12.6, 0, { parent: group });
+  const keep = box(28, 20, 17, brickMaterial(6, 4), 0, 12.6, 0, { parent: group });
   addBlocker(keep);
   addCollider(0, -32, 14, 8.5);
 
@@ -189,7 +191,7 @@ function buildCastle(parent, bannerMaterial) {
   // torres de canto
   for (const sx of [-1, 1]) {
     for (const sz of [-1, 1]) {
-      const turret = cylinder(4, 4.2, 27, 12, M.stone, sx * 14, 13.5, sz * 8.5, { parent: group });
+      const turret = cylinder(4, 4.2, 27, 12, brickMaterial(3.4, 5), sx * 14, 13.5, sz * 8.5, { parent: group });
       cylinder(4.5, 4.5, 0.6, 12, M.stoneLight, sx * 14, 27.3, sz * 8.5, { parent: group });
       cone(4.7, 8.5, 12, M.roofSlate, sx * 14, 31.8, sz * 8.5, { parent: group });
       addBlocker(turret);
@@ -198,7 +200,7 @@ function buildCastle(parent, bannerMaterial) {
   }
 
   // grande torre ao fundo
-  const greatTower = cylinder(5.6, 6, 36, 14, M.stone, 0, 18, -5, { parent: group });
+  const greatTower = cylinder(5.6, 6, 36, 14, brickMaterial(4.6, 6), 0, 18, -5, { parent: group });
   cylinder(6.2, 6.2, 0.7, 14, M.stoneLight, 0, 36.2, -5, { parent: group });
   cone(6.4, 13, 14, M.roofSlate, 0, 43, -5, { parent: group });
   box(0.18, 5, 0.18, M.ironDark, 0, 52, -5, { parent: group });

@@ -62,8 +62,11 @@ const sky = new THREE.Mesh(
 );
 scene.add(sky);
 
-const hemi = new THREE.HemisphereLight(0xa8c0e2, 0x3b4430, 1.25);
+const hemi = new THREE.HemisphereLight(0xa8c0e2, 0x3b4430, 1.45);
 scene.add(hemi);
+
+const ambient = new THREE.AmbientLight(0x3a4658, 0.5);
+scene.add(ambient);
 
 const sun = new THREE.DirectionalLight(0xffd2a1, 3.1);
 sun.position.set(-86, 116, 96);
@@ -71,12 +74,12 @@ sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 420;
-sun.shadow.camera.left = -120;
-sun.shadow.camera.right = 120;
-sun.shadow.camera.top = 120;
-sun.shadow.camera.bottom = -120;
-sun.shadow.bias = -0.0005;
-sun.shadow.normalBias = 0.04;
+sun.shadow.camera.left = -85;
+sun.shadow.camera.right = 85;
+sun.shadow.camera.top = 85;
+sun.shadow.camera.bottom = -85;
+sun.shadow.bias = -0.0012;
+sun.shadow.normalBias = 0.06;
 scene.add(sun);
 scene.add(sun.target);
 

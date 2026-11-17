@@ -118,32 +118,65 @@ export function sigilTexture() {
   });
 }
 
+/** Alvenaria de pedra para muralhas e castelo. */
+export function brickTexture() {
+  const texture = canvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = '#4c4842';
+    ctx.fillRect(0, 0, w, h);
+    let seed = 13;
+    const random = () => {
+      seed = (seed * 48271) % 2147483647;
+      return seed / 2147483647;
+    };
+    const rows = 8;
+    const rowHeight = h / rows;
+    const brickWidth = 64;
+    for (let row = 0; row < rows; row++) {
+      const offset = (row % 2) * (brickWidth / 2);
+      for (let col = -1; col < w / brickWidth + 1; col++) {
+        const shade = 124 + Math.floor(random() * 36);
+        ctx.fillStyle = `rgb(${shade}, ${shade - 4}, ${shade - 13})`;
+        ctx.fillRect(col * brickWidth + offset + 2, row * rowHeight + 2, brickWidth - 4, rowHeight - 4);
+      }
+    }
+  });
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+export function brickMaterial(repeatX = 6, repeatY = 2, tint = 0xffffff) {
+  const map = brickTexture();
+  map.repeat.set(repeatX, repeatY);
+  return new THREE.MeshStandardMaterial({ map, color: tint, roughness: 1, metalness: 0 });
+}
+
 /** Calçamento de pedra do pátio do reino. */
 export function cobbleTexture() {
   const texture = canvasTexture(256, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#5f5a51';
+    ctx.fillStyle = '#6b675e';
     ctx.fillRect(0, 0, w, h);
     let seed = 7;
     const random = () => {
       seed = (seed * 16807) % 2147483647;
       return seed / 2147483647;
     };
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        const cx = col * 32 + 16 + (random() - 0.5) * 7;
-        const cy = row * 32 + 16 + (random() - 0.5) * 7;
-        const radius = 12 + random() * 4;
-        const shade = 126 + Math.floor(random() * 46);
-        ctx.fillStyle = `rgb(${shade}, ${shade - 4}, ${shade - 14})`;
+    for (let row = 0; row < 18; row++) {
+      for (let col = 0; col < 18; col++) {
+        const cx = col * 14 + 7 + (random() - 0.5) * 4;
+        const cy = row * 14 + 7 + (random() - 0.5) * 4;
+        const radius = 5.4 + random() * 1.8;
+        const shade = 120 + Math.floor(random() * 22);
+        ctx.fillStyle = `rgb(${shade}, ${shade - 3}, ${shade - 12})`;
         ctx.beginPath();
-        ctx.ellipse(cx, cy, radius, radius * 0.78, random() * 0.7, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy, radius, radius * 0.82, random() * 0.7, 0, Math.PI * 2);
         ctx.fill();
       }
     }
   });
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(16, 15);
+  texture.repeat.set(26, 24);
   return texture;
 }
 

@@ -139,7 +139,7 @@ export function createForest(scene) {
   while (attempts < 14000 && pines.length < 1750) {
     attempts++;
     const angle = random() * Math.PI * 2;
-    const radius = 76 + Math.pow(random(), 0.72) * 190;
+    const radius = 68 + Math.pow(random(), 0.72) * 198;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
 
@@ -161,7 +161,7 @@ export function createForest(scene) {
 
   for (let i = 0; i < 620; i++) {
     const angle = random() * Math.PI * 2;
-    const radius = 74 + Math.pow(random(), 0.6) * 175;
+    const radius = 66 + Math.pow(random(), 0.6) * 183;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     if (Math.abs(x) < 66 && z > -54 && z < 66) continue;
@@ -179,7 +179,7 @@ export function createForest(scene) {
 
   for (let i = 0; i < 340; i++) {
     const angle = random() * Math.PI * 2;
-    const radius = 70 + Math.pow(random(), 0.7) * 200;
+    const radius = 64 + Math.pow(random(), 0.7) * 206;
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     if (Math.abs(x) < 66 && z > -54 && z < 66) continue;
