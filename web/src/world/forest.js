@@ -197,7 +197,7 @@ export function createForest(scene) {
   const near = pines.filter((tree) => tree.distance < 155);
   const far = pines.filter((tree) => tree.distance >= 155);
 
-  const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x2e2318, roughness: 1 });
+  const trunkMaterial = M.bark;
   const foliageMaterial = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     roughness: 1,

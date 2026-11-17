@@ -1,5 +1,15 @@
 import * as THREE from 'three';
-import { M, box, cylinder, cone, plane, signTexture, stripeTexture, brickMaterial } from './materials.js';
+import {
+  M,
+  box,
+  cylinder,
+  cone,
+  plane,
+  signTexture,
+  stripeTexture,
+  brickMaterial,
+  scaleConeUV,
+} from './materials.js';
 import { addCollider, addBlocker } from './colliders.js';
 import { createSmoke } from './fx.js';
 
@@ -75,7 +85,9 @@ function building({
   }
 
   // telhado
-  const roofMesh = new THREE.Mesh(new THREE.ConeGeometry(1, roofH, 4), roof);
+  const roofGeometry = new THREE.ConeGeometry(1, roofH, 4);
+  scaleConeUV(roofGeometry, ((w + d) / 2) * 0.79, roofH, roof.userData?.tile ?? 2);
+  const roofMesh = new THREE.Mesh(roofGeometry, roof);
   roofMesh.rotation.y = Math.PI / 4;
   roofMesh.scale.set(w * 0.79, 1, d * 0.79);
   roofMesh.position.y = h + 0.5 + roofH / 2;
@@ -151,7 +163,9 @@ function well(parent, x, z) {
   for (const sx of [-1, 1]) box(0.26, 3.6, 0.26, M.woodDark, x + sx * 1.7, 3.1, z, { parent });
   box(4, 0.22, 0.22, M.woodDark, x, 4.8, z, { parent });
 
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.6, 1.5, 4), M.roofBrown);
+  const roofGeometry = new THREE.ConeGeometry(2.6, 1.5, 4);
+  scaleConeUV(roofGeometry, 2.6, 1.5, M.roofBrown.userData.tile);
+  const roof = new THREE.Mesh(roofGeometry, M.roofBrown);
   roof.rotation.y = Math.PI / 4;
   roof.position.set(x, 5.7, z);
   roof.castShadow = true;

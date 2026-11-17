@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { heightAt } from './world/terrain.js';
 import { boxes, blockers } from './world/colliders.js';
+import { M } from './world/materials.js';
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -13,10 +14,11 @@ export function createPlayer({ scene, camera, canvas }) {
   model.rotation.y = Math.PI; // começa olhando para o castelo
   root.add(model);
 
-  const tunic = new THREE.MeshStandardMaterial({ color: 0x2c3f66, roughness: 0.85 });
-  const steel = new THREE.MeshStandardMaterial({ color: 0x9ba3ad, metalness: 0.8, roughness: 0.35 });
+  const tunic = M.clothBlue;
+  const steel = M.metal;
   const leather = new THREE.MeshStandardMaterial({ color: 0x4a3320, roughness: 0.95 });
-  const capeMaterial = new THREE.MeshStandardMaterial({ color: 0x7d2320, roughness: 0.95, side: THREE.DoubleSide });
+  const capeMaterial = M.clothRed.clone();
+  capeMaterial.side = THREE.DoubleSide;
   const skin = new THREE.MeshStandardMaterial({ color: 0xc79a72, roughness: 0.9 });
   const hair = new THREE.MeshStandardMaterial({ color: 0x2b2118, roughness: 1 });
 

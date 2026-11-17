@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import './style.css';
 import { createTerrain } from './world/terrain.js';
+import { createSky } from './world/sky.js';
 import { createKingdom } from './world/kingdom.js';
 import { createTown } from './world/town.js';
 import { createForest } from './world/forest.js';
@@ -18,58 +19,34 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.28;
+renderer.toneMappingExposure = 1.16;
 container.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x3c4d60, 0.0038);
+scene.fog = new THREE.FogExp2(0x565f63, 0.004);
 
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 900);
 
-// céu de crepúsculo
-const sky = new THREE.Mesh(
-  new THREE.SphereGeometry(620, 32, 16),
-  new THREE.ShaderMaterial({
-    side: THREE.BackSide,
-    depthWrite: false,
-    toneMapped: false,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x17223c) },
-      horizonColor: { value: new THREE.Color(0xd89a68) },
-      offset: { value: 90 },
-      exponent: { value: 0.85 },
-    },
-    vertexShader: /* glsl */ `
-      varying vec3 vWorldPosition;
-      void main() {
-        vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-        vWorldPosition = worldPosition.xyz;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: /* glsl */ `
-      uniform vec3 topColor;
-      uniform vec3 horizonColor;
-      uniform float offset;
-      uniform float exponent;
-      varying vec3 vWorldPosition;
-      void main() {
-        float h = normalize(vWorldPosition + vec3(0.0, offset, 0.0)).y;
-        gl_FragColor = vec4(mix(horizonColor, topColor, pow(max(h, 0.0), exponent)), 1.0);
-      }
-    `,
-  }),
-);
-scene.add(sky);
+const sunPosition = new THREE.Vector3(-86, 116, 96);
 
-const hemi = new THREE.HemisphereLight(0xa8c0e2, 0x3b4430, 1.45);
+// céu de crepúsculo + mapa de ambiente para reflexos
+createSky(scene, renderer, {
+  sunDirection: sunPosition.clone().normalize(),
+  topColor: 0x16213c,
+  horizonColor: 0xdb9c68,
+  groundColor: 0x1b211d,
+  sunColor: 0xffd7a8,
+  environmentIntensity: 0.55,
+});
+
+const hemi = new THREE.HemisphereLight(0xa4bcdc, 0x3d4730, 0.85);
 scene.add(hemi);
 
-const ambient = new THREE.AmbientLight(0x3a4658, 0.5);
+const ambient = new THREE.AmbientLight(0x40506a, 0.25);
 scene.add(ambient);
 
 const sun = new THREE.DirectionalLight(0xffd2a1, 3.1);
-sun.position.set(-86, 116, 96);
+sun.position.copy(sunPosition);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1;

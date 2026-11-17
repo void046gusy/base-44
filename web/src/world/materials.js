@@ -1,28 +1,80 @@
 import * as THREE from 'three';
+import { surfaceSet, repeatTextures } from './textures.js';
 
-const std = (color, opts = {}) =>
-  new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0, ...opts });
+// Todas as superfícies usam texturas procedurais com albedo, normais e rugosidade.
+// As UVs dos primitivos são escaladas em metros (material.userData.tile), então a
+// mesma textura mantém a densidade de texels em paredes grandes e peças pequenas.
+
+function surface(
+  name,
+  {
+    color = 0xffffff,
+    roughness = 1,
+    metalness = 0,
+    tile = 2.4,
+    normalScale = 1,
+    envMapIntensity = 0.7,
+    ...extra
+  } = {},
+) {
+  const set = surfaceSet(name);
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    map: set.map,
+    normalMap: set.normalMap,
+    normalScale: new THREE.Vector2(normalScale, normalScale),
+    roughnessMap: set.roughnessMap,
+    roughness,
+    metalness,
+    envMapIntensity,
+    ...extra,
+  });
+  material.userData.tile = tile;
+  return material;
+}
 
 export const M = {
-  stone: std(0x8f8d84, { roughness: 0.96 }),
-  stoneLight: std(0xa9a496),
-  stoneDark: std(0x68665f, { roughness: 1 }),
-  cobble: std(0x7d786e, { roughness: 1 }),
-  dirt: std(0x7d6549, { roughness: 1 }),
-  dirtDark: std(0x4e4231, { roughness: 1 }),
-  wood: std(0x5b3f27),
-  woodLight: std(0x8a6438),
-  woodDark: std(0x3b2a1b),
-  plaster: std(0xd5cab1),
-  roofRed: std(0x8a3230, { roughness: 0.95 }),
-  roofSlate: std(0x39404c),
-  roofBrown: std(0x6c452e),
-  metal: std(0x6f747c, { metalness: 0.8, roughness: 0.34 }),
-  ironDark: std(0x33363b, { metalness: 0.65, roughness: 0.5 }),
-  clothRed: std(0x8e2323, { roughness: 1 }),
-  clothBlue: std(0x2b4a7a),
-  hay: std(0xb99a55, { roughness: 1 }),
-  water: std(0x304c54, { roughness: 0.18, metalness: 0.15 }),
+  stone: surface('stoneWall', { color: 0xd9d3c2, tile: 3, normalScale: 1.15 }),
+  stoneLight: surface('stoneWall', { color: 0xf6f0dc, tile: 3, normalScale: 1 }),
+  stoneDark: surface('stoneWall', { color: 0x9c978b, tile: 3, normalScale: 1.15 }),
+  cobble: surface('cobble', { color: 0xffffff, tile: 2.6, normalScale: 1.2 }),
+  dirt: surface('dirt', { color: 0xc9b39a, tile: 2.2, normalScale: 0.9 }),
+  dirtDark: surface('dirt', { color: 0x9a8874, tile: 2.2 }),
+  wood: surface('wood', { color: 0xb28a5c, tile: 1.5, normalScale: 0.9 }),
+  woodLight: surface('wood', { color: 0xdcb887, tile: 1.5, normalScale: 0.9 }),
+  woodDark: surface('wood', { color: 0x7d5a38, tile: 1.5, normalScale: 0.9 }),
+  plaster: surface('plaster', { color: 0xffffff, tile: 3.4, normalScale: 0.7 }),
+  roofRed: surface('roofTiles', { color: 0xb0523d, tile: 2.1, normalScale: 1.4 }),
+  roofSlate: surface('roofTiles', { color: 0x6b7583, tile: 2.1, normalScale: 1.4 }),
+  roofBrown: surface('roofTiles', { color: 0x9d6f47, tile: 2.1, normalScale: 1.4 }),
+  metal: surface('metal', {
+    color: 0xdde2e8,
+    metalness: 0.85,
+    roughness: 0.8,
+    tile: 1.1,
+    normalScale: 0.6,
+    envMapIntensity: 1.3,
+  }),
+  ironDark: surface('metal', {
+    color: 0x5f646c,
+    metalness: 0.7,
+    roughness: 0.95,
+    tile: 1.1,
+    normalScale: 0.6,
+    envMapIntensity: 1,
+  }),
+  clothRed: surface('cloth', { color: 0xb03a32, tile: 0.9, normalScale: 0.7 }),
+  clothBlue: surface('cloth', { color: 0x40629b, tile: 0.9, normalScale: 0.7 }),
+  hay: surface('hay', { color: 0xffffff, tile: 1.2, normalScale: 1.2 }),
+  bark: surface('wood', { color: 0x574130, tile: 1, normalScale: 1 }),
+  leaf: surface('cloth', { color: 0x27482f, tile: 1, normalScale: 0.6 }),
+  rock: surface('stoneWall', { color: 0xa4a69c, tile: 2.4, normalScale: 1.2 }),
+  water: new THREE.MeshStandardMaterial({
+    color: 0x2b4148,
+    roughness: 0.12,
+    metalness: 0.35,
+    envMapIntensity: 1.5,
+  }),
   ember: new THREE.MeshStandardMaterial({
     color: 0xff8a3c,
     emissive: 0xff5a10,
@@ -35,15 +87,61 @@ export const M = {
     emissiveIntensity: 1.7,
     roughness: 0.5,
   }),
-  dark: std(0x211b16),
-  leaf: std(0x27482f, { roughness: 1 }),
-  bark: std(0x2f2419),
-  rock: std(0x585d5c, { roughness: 1 }),
+  dark: new THREE.MeshStandardMaterial({ color: 0x1a1511, roughness: 1 }),
 };
+
+// --- UVs em metros -----------------------------------------------------------
+
+const uvOf = (geometry) => geometry.attributes.uv;
+
+/** Escala as UVs de uma caixa por face, mantendo a textura na escala do mundo. */
+export function scaleBoxUV(geometry, w, h, d, tile) {
+  const uv = uvOf(geometry);
+  const faces = [
+    [d, h],
+    [d, h],
+    [w, d],
+    [w, d],
+    [w, h],
+    [w, h],
+  ];
+  for (let face = 0; face < 6; face++) {
+    const su = faces[face][0] / tile;
+    const sv = faces[face][1] / tile;
+    for (let i = face * 4; i < face * 4 + 4; i++) {
+      uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+    }
+  }
+  uv.needsUpdate = true;
+}
+
+export function scaleCylinderUV(geometry, radius, height, tile) {
+  const uv = uvOf(geometry);
+  const su = (Math.PI * 2 * radius) / tile;
+  const sv = height / tile;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  uv.needsUpdate = true;
+}
+
+export function scaleConeUV(geometry, radius, height, tile) {
+  const slant = Math.hypot(radius, height);
+  const uv = uvOf(geometry);
+  const su = (Math.PI * 2 * radius) / tile;
+  const sv = slant / tile;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  uv.needsUpdate = true;
+}
+
+const tileOf = (material) => material?.userData?.tile ?? 0;
+
+// --- primitivos --------------------------------------------------------------
 
 export function box(w, h, d, material, x = 0, y = 0, z = 0, opts = {}) {
   const { cast = true, receive = true, parent = null, rotY = 0, rotX = 0, rotZ = 0 } = opts;
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  const geometry = new THREE.BoxGeometry(w, h, d);
+  const tile = tileOf(material);
+  if (tile > 0) scaleBoxUV(geometry, w, h, d, tile);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.rotation.set(rotX, rotY, rotZ);
   mesh.castShadow = cast;
@@ -54,7 +152,10 @@ export function box(w, h, d, material, x = 0, y = 0, z = 0, opts = {}) {
 
 export function cylinder(rTop, rBottom, height, segments, material, x = 0, y = 0, z = 0, opts = {}) {
   const { cast = true, receive = true, parent = null, rotY = 0 } = opts;
-  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBottom, height, segments), material);
+  const geometry = new THREE.CylinderGeometry(rTop, rBottom, height, segments);
+  const tile = tileOf(material);
+  if (tile > 0) scaleCylinderUV(geometry, (rTop + rBottom) / 2, height, tile);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.rotation.y = rotY;
   mesh.castShadow = cast;
@@ -65,7 +166,10 @@ export function cylinder(rTop, rBottom, height, segments, material, x = 0, y = 0
 
 export function cone(radius, height, segments, material, x = 0, y = 0, z = 0, opts = {}) {
   const { cast = true, receive = true, parent = null } = opts;
-  const mesh = new THREE.Mesh(new THREE.ConeGeometry(radius, height, segments), material);
+  const geometry = new THREE.ConeGeometry(radius, height, segments);
+  const tile = tileOf(material);
+  if (tile > 0) scaleConeUV(geometry, radius, height, tile);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.castShadow = cast;
   mesh.receiveShadow = receive;
@@ -75,7 +179,14 @@ export function cone(radius, height, segments, material, x = 0, y = 0, z = 0, op
 
 export function plane(w, h, material, x = 0, y = 0, z = 0, opts = {}) {
   const { parent = null, rotY = 0, cast = false, receive = false } = opts;
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
+  const geometry = new THREE.PlaneGeometry(w, h);
+  const tile = tileOf(material);
+  if (tile > 0) {
+    const uv = geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (uv.getX(i) * w) / tile, (uv.getY(i) * h) / tile);
+    uv.needsUpdate = true;
+  }
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.set(x, y, z);
   mesh.rotation.y = rotY;
   mesh.castShadow = cast;
@@ -84,6 +195,8 @@ export function plane(w, h, material, x = 0, y = 0, z = 0, opts = {}) {
   return mesh;
 }
 
+// --- texturas especiais ------------------------------------------------------
+
 function canvasTexture(width, height, draw) {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -91,7 +204,7 @@ function canvasTexture(width, height, draw) {
   draw(canvas.getContext('2d'), width, height);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = 8;
   return texture;
 }
 
@@ -120,64 +233,55 @@ export function sigilTexture() {
 
 /** Alvenaria de pedra para muralhas e castelo. */
 export function brickTexture() {
-  const texture = canvasTexture(256, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#4c4842';
-    ctx.fillRect(0, 0, w, h);
-    let seed = 13;
-    const random = () => {
-      seed = (seed * 48271) % 2147483647;
-      return seed / 2147483647;
-    };
-    const rows = 8;
-    const rowHeight = h / rows;
-    const brickWidth = 64;
-    for (let row = 0; row < rows; row++) {
-      const offset = (row % 2) * (brickWidth / 2);
-      for (let col = -1; col < w / brickWidth + 1; col++) {
-        const shade = 124 + Math.floor(random() * 36);
-        ctx.fillStyle = `rgb(${shade}, ${shade - 4}, ${shade - 13})`;
-        ctx.fillRect(col * brickWidth + offset + 2, row * rowHeight + 2, brickWidth - 4, rowHeight - 4);
-      }
-    }
-  });
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  return texture;
+  return surfaceSet('stoneWall').map;
 }
 
-export function brickMaterial(repeatX = 6, repeatY = 2, tint = 0xffffff) {
-  const map = brickTexture();
-  map.repeat.set(repeatX, repeatY);
-  return new THREE.MeshStandardMaterial({ map, color: tint, roughness: 1, metalness: 0 });
+export function brickMaterial(_repeatX, _repeatY, tint = 0xffffff) {
+  if (tint === 0xffffff) return M.stone;
+  return new THREE.MeshStandardMaterial({
+    color: tint,
+    map: surfaceSet('stoneWall').map,
+    normalMap: surfaceSet('stoneWall').normalMap,
+    normalScale: new THREE.Vector2(1.15, 1.15),
+    roughnessMap: surfaceSet('stoneWall').roughnessMap,
+    roughness: 1,
+    metalness: 0,
+    envMapIntensity: 0.7,
+  });
 }
 
 /** Calçamento de pedra do pátio do reino. */
-export function cobbleTexture() {
-  const texture = canvasTexture(256, 256, (ctx, w, h) => {
-    ctx.fillStyle = '#6b675e';
-    ctx.fillRect(0, 0, w, h);
-    let seed = 7;
-    const random = () => {
-      seed = (seed * 16807) % 2147483647;
-      return seed / 2147483647;
-    };
-    for (let row = 0; row < 18; row++) {
-      for (let col = 0; col < 18; col++) {
-        const cx = col * 14 + 7 + (random() - 0.5) * 4;
-        const cy = row * 14 + 7 + (random() - 0.5) * 4;
-        const radius = 5.4 + random() * 1.8;
-        const shade = 120 + Math.floor(random() * 22);
-        ctx.fillStyle = `rgb(${shade}, ${shade - 3}, ${shade - 12})`;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, radius, radius * 0.82, random() * 0.7, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
+export function cobbleTexture(repeatX = 44, repeatY = 40) {
+  const textures = repeatTextures(surfaceSet('cobble'), repeatX, repeatY);
+  return textures.map;
+}
+
+export function cobbleMaterial(repeatX = 44, repeatY = 40) {
+  const textures = repeatTextures(surfaceSet('cobble'), repeatX, repeatY);
+  return new THREE.MeshStandardMaterial({
+    map: textures.map,
+    normalMap: textures.normalMap,
+    normalScale: new THREE.Vector2(1.2, 1.2),
+    roughnessMap: textures.roughnessMap,
+    roughness: 1,
+    metalness: 0,
+    envMapIntensity: 0.7,
   });
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(26, 24);
-  return texture;
+}
+
+/** Terreno gramado: detalhe multiplicado pelas cores por vértice. */
+export function groundMaterial(repeat = 72) {
+  const textures = repeatTextures(surfaceSet('ground'), repeat, repeat);
+  return new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    map: textures.map,
+    normalMap: textures.normalMap,
+    normalScale: new THREE.Vector2(0.7, 0.7),
+    roughnessMap: textures.roughnessMap,
+    roughness: 1,
+    metalness: 0,
+    envMapIntensity: 0.6,
+  });
 }
 
 /** Placa de madeira com o nome do estabelecimento. */

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { cobbleTexture } from './materials.js';
+import { cobbleMaterial, groundMaterial } from './materials.js';
 import { KINGDOM, RIFTS, GATE } from './layout.js';
 
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
@@ -53,10 +53,10 @@ export function createTerrain(scene) {
 
   const position = geo.attributes.position;
   const colors = new Float32Array(position.count * 3);
-  const grass = new THREE.Color(0x354a2b);
-  const grassDark = new THREE.Color(0x1e2c19);
-  const moss = new THREE.Color(0x2b3c22);
-  const dirt = new THREE.Color(0x6b5940);
+  const grass = new THREE.Color(0x415c31);
+  const grassDark = new THREE.Color(0x27381e);
+  const moss = new THREE.Color(0x36492a);
+  const dirt = new THREE.Color(0x7d6a4d);
   const mixed = new THREE.Color();
 
   for (let i = 0; i < position.count; i++) {
@@ -79,10 +79,7 @@ export function createTerrain(scene) {
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geo.computeVertexNormals();
 
-  const ground = new THREE.Mesh(
-    geo,
-    new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }),
-  );
+  const ground = new THREE.Mesh(geo, groundMaterial(150));
   ground.receiveShadow = true;
   root.add(ground);
 
@@ -93,7 +90,7 @@ export function createTerrain(scene) {
     Math.max(courtyardWidth, courtyardDepth),
     1,
     0.05,
-    new THREE.MeshStandardMaterial({ map: cobbleTexture(), roughness: 1, metalness: 0 }),
+    cobbleMaterial(courtyardWidth / 2.6, courtyardDepth / 2.6),
   );
   courtyard.scale.set(courtyardWidth / Math.max(courtyardWidth, courtyardDepth), 1, courtyardDepth / Math.max(courtyardWidth, courtyardDepth));
   courtyard.position.set(0, 0.05, (KINGDOM.minZ + KINGDOM.maxZ) / 2);
